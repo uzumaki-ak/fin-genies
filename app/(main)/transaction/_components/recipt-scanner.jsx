@@ -28,7 +28,7 @@ const ReciptScanner = ({ onScanComplete }) => {
   useEffect(() =>{ 
     if(scannedData && !scanReceiptLoading) {
       onScanComplete(scannedData);
-      toast.success("Receipt Scammed successfully 🫡")
+      toast.success("Receipt Scanned successfully 🫡")
     }
   },[scanReceiptLoading, scannedData])
   return (

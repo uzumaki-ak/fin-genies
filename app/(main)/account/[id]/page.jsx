@@ -29,7 +29,7 @@ export default async function AccountPage({ params }) {
           </p>
         </div>
         <div>
-          <div>${parseFloat(account.balance).toFixed(2)}</div>
+          <div>₹{parseFloat(account.balance).toFixed(2)}</div>
           <p className="text-sm text-muted-foreground">
             {account._count.transactions} Transactions
           </p>

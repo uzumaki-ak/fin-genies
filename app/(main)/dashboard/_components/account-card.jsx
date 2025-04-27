@@ -74,7 +74,7 @@ const AccountCard = ({ account }) => {
         <CardContent>
           {/* convtng strnf to float and decimal to 2nd place  */}
           <div className="text-2xl font-semibold">
-            ${parseFloat(balance).toFixed(2)}
+          ₹{parseFloat(balance).toFixed(2)}
           </div>
           <p className="text-xs text-muted-foreground">
             {type.charAt(0) + type.slice(1).toLowerCase()} Account
