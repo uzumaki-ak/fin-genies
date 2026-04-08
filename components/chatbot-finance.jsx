@@ -1,38 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef, Children } from "react";
-
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-
 import { Button } from "./ui/button";
-
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
-
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
-
-import {
-  X,
-  MessageCircle,
-  Send,
-  Loader2,
-  ArrowDownCircleIcon,
-} from "lucide-react";
-
+import { X, MessageCircle, Send, Loader2, ArrowDownCircleIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChat } from "@ai-sdk/react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Chat() {
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [showChatIcon, setShowChatIcon] = useState(false);
-  const chatIconRef = useRef  (null);
+  const scrollRef = useRef(null);
 
   const {
     messages,
@@ -45,188 +26,132 @@ export default function Chat() {
     error,
   } = useChat({ api: "/api/gemini" });
 
-  const scrollRef = useRef (null);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 200) {
-        setShowChatIcon(true);
-      } else {
-        setShowChatIcon(false);
-        setIsChatOpen(false);
-      }
-    };
-    handleScroll();
-
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
-  const toggleChat = () => {
-    setIsChatOpen(!isChatOpen);
-  };
-
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
+  const toggleChat = () => setIsChatOpen((prev) => !prev);
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <>
       <AnimatePresence>
-        {showChatIcon && (
-          <motion.div
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            exit={{ opacity: 0, y: 100 }}
-            className="fixed bottom-2 right-4 z-50 "
+        <motion.div
+          initial={{ opacity: 0, y: 100 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="fixed bottom-2 right-4 z-50"
+        >
+          <Button
+            onClick={toggleChat}
+            size="icon"
+            className="size-14 rounded-full p-2 shadow-lg"
           >
-            <Button
-              ref={chatIconRef}
-              onClick={toggleChat}
-              size="icon"
-              className="rounded-full size-14 p-2 shadow-lg"
-            >
-              {!isChatOpen ? (
-                <MessageCircle className="size-12" />
-              ) : (
-                <ArrowDownCircleIcon />
-              )}
-            </Button>
-          </motion.div>
-        )}
+            {!isChatOpen ? <MessageCircle className="size-7" /> : <ArrowDownCircleIcon />}
+          </Button>
+        </motion.div>
       </AnimatePresence>
+
       <AnimatePresence>
         {isChatOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="fixed bottom-20  right-4 z-50 w-[95%] md:w-[500px] "
+            initial={{ opacity: 0, scale: 0.9, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 16 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-20 right-4 z-50 w-[95%] md:w-[500px]"
           >
             <Card className="border-2">
-              <CardHeader className="flex flex-row items-center justify-between pb-3 space-y-0">
-                <CardTitle className="text-lg font-bold">
-                  Chat With Finance Mang
-                </CardTitle>
-                <Button
-                  onClick={toggleChat}
-                  size="sm"
-                  variant="ghost"
-                  className="  px-2 py-0 shadow-lg"
-                >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-lg font-bold">Chat With Finance Mang</CardTitle>
+                <Button onClick={toggleChat} size="sm" variant="ghost" className="px-2 py-0">
                   <X className="size-4" />
-                  <span className="sr-only">Close Chat</span>
+                  <span className="sr-only">Close chat</span>
                 </Button>
               </CardHeader>
+
               <CardContent>
-                <ScrollArea className="h-[300px] pr-4">
-                  {messages?.length === 0 && (
-                    <div className="w-full mt-32 text-gray-300 items-center justify-center flex gap-3">
-                      No Message Ywt
+                <ScrollArea className="h-[320px] pr-4">
+                  {messages.length === 0 && (
+                    <div className="mt-32 flex w-full items-center justify-center text-sm text-gray-400">
+                      Ask anything about your finances.
                     </div>
                   )}
 
-                  {messages?.map((message, index) => (
+                  {messages.map((message) => (
                     <div
-                      key={index}
-                      className={`mb-4 ${
-                        message.role === "user" ? "text-right" : "text-left"
-                      }`}
+                      key={message.id}
+                      className={`mb-4 ${message.role === "user" ? "text-right" : "text-left"}`}
                     >
                       <div
-                        className={`inline-block p-3 rounded-lg  ${
+                        className={`inline-block rounded-lg p-3 ${
                           message.role === "user"
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted"
                         }`}
                       >
                         <ReactMarkdown
-                          children={message.content}
-                          rehypePlugins={[remarkGfm]}
+                          remarkPlugins={[remarkGfm]}
                           components={{
-                            code({
-                              node,
-                              inline,
-                              className,
-                              children,
-                              ...props
-                            }) {
+                            code({ inline, children, ...props }) {
                               return inline ? (
-                                <code
-                                  {...props}
-                                  className="bg-gray-200 px-1 rounded"
-                                >
+                                <code {...props} className="rounded bg-gray-200 px-1">
                                   {children}
                                 </code>
                               ) : (
-                                <pre
-                                  {...props}
-                                  className="bg-gray-200 px-2 rounded"
-                                >
+                                <pre {...props} className="rounded bg-gray-200 px-2 py-1">
                                   <code>{children}</code>
                                 </pre>
                               );
                             },
-                            ul: ({ children }) => (
-                              <ul className="list-disc ml-4">{children}</ul>
-                            ),
+                            ul: ({ children }) => <ul className="ml-4 list-disc">{children}</ul>,
                             ol: ({ children }) => (
-                              <li className="list-decimal ml-4">{children}</li>
+                              <ol className="ml-4 list-decimal">{children}</ol>
                             ),
                           }}
-                        />
+                        >
+                          {message.content}
+                        </ReactMarkdown>
                       </div>
                     </div>
                   ))}
+
                   {isLoading && (
-                    <div className="w-full items-center flex justify-center gap-3">
-                      <Loader2 className="animate-spin h-5 w-5 text-primary" />
-                      <button
-                        className="underline "
-                        type="button"
-                        onClick={() => stop()}
-                      >
-                        cancel
+                    <div className="flex w-full items-center justify-center gap-3">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <button className="underline" type="button" onClick={() => stop()}>
+                        Cancel
                       </button>
                     </div>
                   )}
 
                   {error && (
-                    <div className="w-full items-center flex justify-center gap-3">
-                      <div>An Error occured while generating</div>
-                      <button
-                        className="underline"
-                        type="button"
-                        onClick={() => reload()}
-                      >
-                        Try Again?
+                    <div className="flex w-full items-center justify-center gap-3">
+                      <div>Could not generate a reply.</div>
+                      <button className="underline" type="button" onClick={() => reload()}>
+                        Try again
                       </button>
                     </div>
                   )}
-                  <div ref={scrollRef}></div>
+
+                  <div ref={scrollRef} />
                 </ScrollArea>
               </CardContent>
+
               <CardFooter>
-                <form
-                  onSubmit={handleSubmit}
-                  className="flex w-full items-center space-x-2"
-                >
+                <form onSubmit={handleSubmit} className="flex w-full items-center space-x-2">
                   <Input
                     value={input}
                     onChange={handleInputChange}
                     className="flex-1"
-                    placeholder="Whats Your Query"
+                    placeholder="Ask about your accounts, budget, or expenses"
+                    disabled={isLoading}
                   />
                   <Button
                     type="submit"
                     className="size-9"
-                    disabled={isLoading}
+                    disabled={isLoading || !input.trim()}
                     size="icon"
                   >
                     <Send className="size-4" />
@@ -237,6 +162,6 @@ export default function Chat() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }

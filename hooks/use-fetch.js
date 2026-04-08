@@ -4,7 +4,7 @@ import { toast } from "sonner";
 // Fetch data with a timeout cb her is calbck whn cerate ac clkd these 3 fun will run 
 const useFetch = (cb) => {
   const [data, setData] = useState(undefined);
-  const [loading, setLoading] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // to reuse fun again and agn we mande fn func
@@ -18,6 +18,7 @@ const useFetch = (cb) => {
       const response = await cb(...args);
       setData(response);
       setError(null);
+      return response;
     } catch (error) {
       setError(error);
       toast.error(error.message);

@@ -19,7 +19,7 @@ const aj = arcjet({
     }),
     detectBot({
       mode: "LIVE",
-      allow: ["CATEGORY:SEACH_ENGINE", "GO_HTTP"],
+      allow: ["CATEGORY:SEARCH_ENGINE", "GO_HTTP"],
     }),
   ],
 });

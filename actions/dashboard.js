@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { getDbUser } from "@/lib/get-db-user";
 import { revalidatePath } from "next/cache";
 
 //  converting balance to number as next dsnt act deciml
@@ -19,16 +19,7 @@ const serializeTransaction = (obj) => {
 
 export async function createAccount(data) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) {
-      throw new Error("user not found");
-    }
+    const user = await getDbUser();
 
     // converting balnce to flot before saving
     const balanceFloat = parseFloat(data.balance);
@@ -74,16 +65,8 @@ export async function createAccount(data) {
 }
 
 export async function getUserAccounts() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("unauthorized");
+  const user = await getDbUser();
 
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) {
-    throw new Error("user not found");
-  }
   // now find accoutn
   const accounts = await db.account.findMany({
     where: { userId: user.id },
@@ -97,24 +80,19 @@ export async function getUserAccounts() {
     },
   });
   const serializedAccount = accounts.map(serializeTransaction);
-  return serializedAccount
+  return serializedAccount;
 }
 
 // later on when we go on to add the transactions the transaction amount will also be needed to convert to number from decimal line 14 to 16
 
 export async function getDashboardData() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("unauthorized");
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-  if (!user) {
-    throw new Error("user not found");
-  }
+  const user = await getDbUser();
 
   // get all user transaction 
   const transactions = await db.transaction.findMany({
-    where: {userId: user.id},
-    orderBy: {date: "desc"},
-  })
+    where: { userId: user.id },
+    orderBy: { date: "desc" },
+  });
+
+  return transactions.map(serializeTransaction);
 }

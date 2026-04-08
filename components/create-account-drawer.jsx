@@ -26,9 +26,11 @@ import useFetch from "@/hooks/use-fetch";
 import { createAccount } from "@/actions/dashboard";
 import { LoaderPinwheel } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const CreateAccountDrawer = ({ children }) => {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
 
   const {
     register,
@@ -55,12 +57,13 @@ const CreateAccountDrawer = ({ children }) => {
   //when acc load changes or when clk on creat ac useeffect comes in effect say if ac created it will sow toast success mes
 
   useEffect(() => {
-    if (newAccount && !createAccountLoading) {
+    if (newAccount?.success && !createAccountLoading) {
       toast.success("Yay! Your account was created successfully");
       reset();
       setOpen(false);
+      router.refresh();
     }
-  }, [createAccountLoading, newAccount]);
+  }, [createAccountLoading, newAccount, reset, router]);
 
   useEffect(() => {
     if (error) {

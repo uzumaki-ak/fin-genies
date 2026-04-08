@@ -27,7 +27,7 @@ import { format } from "date-fns";
 import { Calendar1, LoaderPinwheel } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import React, { useEffect } from "react";
+import React, { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import ReciptScanner from "./recipt-scanner";
@@ -78,37 +78,43 @@ const AddTransactionForm = ({
   const {
     loading: transactionLoading,
     fn: transactionFn,
-    data: transactionResult,
   } = useFetch(editMode ? updateTransaction : createTransaction);
+  const submitLockRef = useRef(false);
 
   const type = watch("type");
   const isRecurring = watch("isRecurring");
   const date = watch("date");
 
   const onSubmit = async (data) => {
+    if (submitLockRef.current || transactionLoading) {
+      return;
+    }
+
+    submitLockRef.current = true;
+
     const formData = {
       ...data,
       amount: parseFloat(data.amount),
     };
 
-    if (editMode) {
-      transactionFn(editId, formData);
-    } else {
-      transactionFn(formData);
+    try {
+      const result = editMode
+        ? await transactionFn(editId, formData)
+        : await transactionFn(formData);
+
+      if (result?.success) {
+        toast.success(
+          editMode
+            ? "Transaction was successfully updated"
+            : "Transaction creation was successful"
+        );
+        reset();
+        router.push(`/account/${result.data.accountId}`);
+      }
+    } finally {
+      submitLockRef.current = false;
     }
   };
-
-  useEffect(() => {
-    if (transactionResult?.success && transactionLoading) {
-      toast.success(
-        editMode
-          ? "Transaction was successfully updated"
-          : "Transaction Creation was successfull"
-      );
-      reset();
-      router.push(`/account/${transactionResult.data.accountId}`);
-    }
-  }, [transactionResult, transactionLoading, editMode]);
 
   const filteredCategories = categories.filter(
     (category) => category.type === type
@@ -311,7 +317,7 @@ const AddTransactionForm = ({
         </div>
       )}
 
-      <div className="flex gap-4">
+      <div className="flex gap-4 pb-4">
         <Button
           type="button"
           variant="outline"
@@ -324,12 +330,12 @@ const AddTransactionForm = ({
           {transactionLoading ? (
             <>
             <LoaderPinwheel className="mr-2 h-4 w-4 animate-spin" />
-            {editMode? "updating..." : "creating..."}
+            {editMode ? "updating..." : "creating..."}
             </>
           ) : editMode ? (
-            "update transaction"
+            "Update transaction"
           ) : (
-            "Create Transaction "
+            "Create transaction"
           )}
         </Button>
       </div>

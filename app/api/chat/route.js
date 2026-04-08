@@ -1,148 +1,56 @@
-// //corrected route.js with runnablesequence
-// import { FinancialAdvisorChain } from '@/app/lib/langchain/chains';
-// import { createChatMemory } from '@/app/lib/langchain/memory';
-// import { auth } from '@clerk/nextjs/server'; // ✅ Import Clerk authentication
+import { auth } from "@clerk/nextjs/server";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getDbUser } from "@/lib/get-db-user";
+import {
+  buildFinanceSystemPrompt,
+  getFinanceSnapshotByClerkId,
+} from "@/lib/financial-chat-context";
 
-// const advisorChain = new FinancialAdvisorChain();
-// const memory = createChatMemory();
-
-// export async function POST(req) {
-//   try {
-//     // ✅ Get user ID from Clerk authentication
-//     const { userId } = auth();
-//     if (!userId) {
-//       return new Response(JSON.stringify({ error: 'Unauthorized: User ID is required' }), {
-//         headers: { 'Content-Type': 'application/json' },
-//         status: 401
-//       });
-//     }
-
-//     // ✅ Parse request body safely
-//     const { query, context = {} } = await req.json();
-//     if (!query) {
-//       return new Response(JSON.stringify({ error: 'Query is required' }), {
-//         headers: { 'Content-Type': 'application/json' },
-//         status: 400
-//       });
-//     }
-
-//     // ✅ Load chat history safely
-//     const history = await memory.loadMemoryVariables({}) || {};
-//     const chatHistory = history.chat_history || [];
-
-//     // ✅ Generate response using new chain structure
-//     const response = await advisorChain.run(userId, query, {
-//       ...context,
-//       chatHistory
-//     });
-
-//     // ✅ Save conversation to memory
-//     await memory.saveContext({ input: query }, { output: response });
-
-//     return new Response(JSON.stringify({ response }), {
-//       headers: { 'Content-Type': 'application/json' },
-//       status: 200
-//     });
-
-//   } catch (error) {
-//     console.error('Chat API error:', error);
-//     return new Response(JSON.stringify({ error: error.message || 'Internal Server Error' }), {
-//       headers: { 'Content-Type': 'application/json' },
-//       status: 500
-//     });
-//   }
-// }
-
-
-//claude ai
-// import { FinancialAdvisorChain } from '@/app/lib/langchain/chains';
-// import { auth } from '@clerk/nextjs/server';
-
-// const advisorChain = new FinancialAdvisorChain();
-
-// export async function POST(req) {
-//   try {
-//     const { userId } = await auth();
-//     if (!userId) {
-//       return new Response(
-//         JSON.stringify({ error: 'Unauthorized' }), 
-//         { status: 401 }
-//       );
-//     }
-
-//     const { query, context = {} } = await req.json();
-//     if (!query) {
-//       return new Response(
-//         JSON.stringify({ error: 'Query is required' }), 
-//         { status: 400 }
-//       );
-//     }
-
-//     const response = await advisorChain.run(userId, query, context);
-
-//     return new Response(
-//       JSON.stringify({ response }), 
-//       { 
-//         headers: { 'Content-Type': 'application/json' },
-//         status: 200 
-//       }
-//     );
-
-//   } catch (error) {
-//     console.error('Chat API error:', error);
-//     return new Response(
-//       JSON.stringify({ error: error.message || 'Internal Server Error' }), 
-//       { 
-//         headers: { 'Content-Type': 'application/json' },
-//         status: 500 
-//       }
-//     );
-//   }
-// }
-
-//deepseek ai
-
-import { FinancialAdvisorChain } from '@/app/lib/langchain/chains';
-import { auth } from '@clerk/nextjs/server';
-
-const advisorChain = new FinancialAdvisorChain();
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(req) {
   try {
     const { userId } = await auth();
     if (!userId) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }), 
-        { status: 401 }
-      );
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { query, context = {} } = await req.json();
-    if (!query) {
-      return new Response(
-        JSON.stringify({ error: 'Query is required' }), 
-        { status: 400 }
-      );
+    if (!query || typeof query !== "string" || !query.trim()) {
+      return Response.json({ error: "Query is required" }, { status: 400 });
     }
 
-    const response = await advisorChain.run(userId, query, context);
+    await getDbUser();
+    const snapshot = await getFinanceSnapshotByClerkId(userId);
 
-    return new Response(
-      JSON.stringify({ response }), 
-      { 
-        headers: { 'Content-Type': 'application/json' },
-        status: 200 
+    const prompt = `
+${buildFinanceSystemPrompt(snapshot, true)}
+
+Additional user context:
+${JSON.stringify(context, null, 2)}
+
+User query:
+${query}
+`.trim();
+
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+
+    return Response.json(
+      {
+        response: responseText,
+      },
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
       }
     );
-
   } catch (error) {
-    console.error('Chat API error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal Server Error' }), 
-      { 
-        headers: { 'Content-Type': 'application/json' },
-        status: 500 
-      }
+    console.error("Chat API error:", error);
+    return Response.json(
+      { error: error.message || "Internal Server Error" },
+      { status: 500 }
     );
   }
 }

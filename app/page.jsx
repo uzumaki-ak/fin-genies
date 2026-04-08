@@ -32,7 +32,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <section name="services">
+      <section id="services" name="services">
         <div className="md:px-0 mx-6 py-6 xl:w-4/5 2xl:w-[68%] md:mx-auto ">
           <h1 className="">
             <WordRotateDemo />
@@ -70,7 +70,7 @@ export default function Home() {
         <ScrollBasedVelocityDemo />
       </section>
       {/* process diag  */}
-      <section name="process">
+      <section id="process" name="process">
         <main className="md:px-0 mx-6 md:mx-auto mb-7">
           <h1 className="text-3xl md:text-5xl md:text-center font-medium flex items-center gap-x-2 mx-auto justify-center">
             Our{" "}
@@ -137,6 +137,23 @@ export default function Home() {
       <section>
         <BackgroundBoxesDemo />
       </section>
+
+      <footer className="mt-10 border-t border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950">
+        <div className="container mx-auto flex flex-col items-center justify-between gap-3 px-4 py-8 text-sm text-slate-600 md:flex-row dark:text-slate-300">
+          <p>Finance Mang</p>
+          <div className="flex items-center gap-4">
+            <a href="#features" className="hover:text-slate-900 dark:hover:text-white">
+              Features
+            </a>
+            <a href="#services" className="hover:text-slate-900 dark:hover:text-white">
+              Services
+            </a>
+            <a href="#process" className="hover:text-slate-900 dark:hover:text-white">
+              Process
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -3,7 +3,7 @@
 // server action related to accoutn i men when one acc is turned on default thr other getts turn off autoatically
 
 import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { getDbUser } from "@/lib/get-db-user";
 import { revalidatePath } from "next/cache";
 
 const serializeTransaction = (obj) => {
@@ -22,18 +22,7 @@ const serializeTransaction = (obj) => {
 export async function updateDefaultAccount(accountId) {
   // checkinn if user is legit
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("unauthorized");
-
-    // finding user accs
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) {
-      throw new Error("user not found");
-    }
+    const user = await getDbUser();
 
     // if ac def make all other not def
 
@@ -42,15 +31,21 @@ export async function updateDefaultAccount(accountId) {
       data: { isDefault: false },
     });
     // update the acc with new def
-    const account = await db.account.update({
-      where: {
-        id: accountId,
-        userId: user.id,
-      },
+    const account = await db.account.findFirst({
+      where: { id: accountId, userId: user.id },
+    });
+
+    if (!account) {
+      throw new Error("account not found");
+    }
+
+    const updatedAccount = await db.account.update({
+      where: { id: account.id },
       data: { isDefault: true },
     });
+
     revalidatePath("/dashboard");
-    return { success: true, data: serializeTransaction(account) };
+    return { success: true, data: serializeTransaction(updatedAccount) };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -58,21 +53,10 @@ export async function updateDefaultAccount(accountId) {
 
 export async function getAccountWithTransactions(accountId) {
   //verify useer
-  const { userId } = await auth();
-  if (!userId) throw new Error("unauthorized");
-
-  // finding user accs
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) {
-    throw new Error("user not found");
-  }
+  const user = await getDbUser();
 
   // finding particulr acc
-  const account = await db.account.findUnique({
+  const account = await db.account.findFirst({
     where: { id: accountId, userId: user.id },
     // we also need transcations
 
@@ -100,18 +84,7 @@ export async function getAccountWithTransactions(accountId) {
 export async function bulkDeleteTransactions(transactionIds) {
   try {
     //verify useer
-    const { userId } = await auth();
-    if (!userId) throw new Error("unauthorized");
-
-    // finding user accs
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) {
-      throw new Error("user not found");
-    }
+    const user = await getDbUser();
 
     // fetch tnrs so w clcl blnc chnges
     const transactions = await db.transaction.findMany({
@@ -125,8 +98,8 @@ export async function bulkDeleteTransactions(transactionIds) {
     const accountBlanaceChanges = transactions.reduce((acc, transaction) => {
       const change =
         transaction.type === "EXPENSE"
-          ? transaction.amount
-          : -transaction.amount;
+          ? Number(transaction.amount)
+          : -Number(transaction.amount);
 
       acc[transaction.accountId] = (acc[transaction.accountId] || 0) + change;
       return acc;
@@ -156,7 +129,7 @@ export async function bulkDeleteTransactions(transactionIds) {
         });
       }
     });
-    revalidatePath("/dashboard")
+    revalidatePath("/dashboard");
     revalidatePath("/account/[id]");
 
     return { success: true };

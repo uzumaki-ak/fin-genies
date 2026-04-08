@@ -1,9 +1,9 @@
 "use server";
 
 import aj from "@/lib/arcjet";
+import { getDbUser } from "@/lib/get-db-user";
 import { db } from "@/lib/prisma";
 import { request } from "@arcjet/next";
-import { auth } from "@clerk/nextjs/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { revalidatePath } from "next/cache";
 
@@ -16,15 +16,14 @@ const serializeAmount = (obj) => ({
 
 export async function createTransaction(data) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("unauthorized");
+    const user = await getDbUser();
 
     //arcjet for rate limotation
 
     const req = await request();
 
     const decision = await aj.protect(req, {
-      userId,
+      userId: user.clerkUserId,
       requested: 1,
     });
 
@@ -43,15 +42,7 @@ export async function createTransaction(data) {
       throw new Error("Request Blocked/-Too many req try later !!");
     }
 
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) {
-      throw new Error("user not found");
-    }
-
-    const account = await db.account.findUnique({
+    const account = await db.account.findFirst({
       where: {
         id: data.accountId,
         userId: user.id,
@@ -123,7 +114,7 @@ function calculateNextRecurringDate(startDate, interval) {
 
 export async function scanReceipt(file) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     // converng file to arybuffer
     const arrayBuffer = await file.arrayBuffer();
     // conv arybuf to base64 iamge
@@ -184,21 +175,11 @@ export async function scanReceipt(file) {
 //edit functionality
 export async function getTransaction(id) {
   // verify useer
-  const { userId } = await auth();
-  if (!userId) throw new Error("unauthorized");
-
-  // finding user accs
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) {
-    throw new Error("user not found");
-  }
+  const user = await getDbUser();
 
   // fetch trhnsction for edit
 
-  const transaction = await db.transaction.findUnique({
+  const transaction = await db.transaction.findFirst({
     where: {
       id,
       userId: user.id,
@@ -212,19 +193,9 @@ export async function getTransaction(id) {
 // server acn for updaet trnc after editimg
 export async function updateTransaction(id, data) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("unauthorized");
-
-    // finding user accs
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) {
-      throw new Error("user not found");
-    }
+    const user = await getDbUser();
     // getng original transaction to calculatye balance change
-    const originalTransaction = await db.transaction.findUnique({
+    const originalTransaction = await db.transaction.findFirst({
       where: {
         id,
         userId: user.id,
@@ -234,6 +205,17 @@ export async function updateTransaction(id, data) {
       },
     });
     if (!originalTransaction) throw new Error("transaction not found");
+    const destinationAccount = await db.account.findFirst({
+      where: {
+        id: data.accountId,
+        userId: user.id,
+      },
+    });
+
+    if (!destinationAccount) {
+      throw new Error("account not found");
+    }
+
     // calc balancebcghange
     const oldBalanceChange =
       originalTransaction.type === "EXPENSE"
@@ -250,7 +232,6 @@ export async function updateTransaction(id, data) {
       const updated = await tx.transaction.update({
         where: {
           id,
-          userId: user.id,
         },
         data: {
           ...data,

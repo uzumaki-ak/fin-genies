@@ -208,14 +208,7 @@ export default function ChatInterface() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: input,
-          context: {
-            riskProfile: 'moderate',
-            investmentAmount: 10000,
-            goals: ['retirement', 'homeownership']
-          }
-        })
+        body: JSON.stringify({ query: input })
       });
 
       if (!response.ok) {
