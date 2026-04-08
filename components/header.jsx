@@ -5,7 +5,6 @@ import React from "react";
 import { Button } from "./ui/button";
 import { LucideLayoutDashboard, NotebookPenIcon } from "lucide-react";
 import { checkUser } from "@/lib/checkUser";
-import { ThemeToggle } from "./theme-toggle";
 
 
 const Header = async () => {
@@ -23,7 +22,6 @@ const Header = async () => {
             className="h-14 w-auto object-contain"
           />
         </Link>
-        {/* <ThemeToggle /> */}
         <div className="flex items-center space-x-4">
           {/* when user sign in things they can acces  */}
           <Show when="signed-in">

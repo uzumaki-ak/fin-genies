@@ -3,7 +3,6 @@ import "./globals.css";
 import Header from "@/components/header";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
-import { ThemeProvider } from "next-themes";
 import Chat from "@/components/chatbot-finance";
 
 // get yourfont
@@ -18,21 +17,12 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
+      <html lang="en">
         <body className={`${inter.className}`}>
-          <ThemeProvider
-            attribute="class"
-            enableSystem
-            defaultTheme="system"
-            disableTransitionOnChange
-          >
-            <Header />
-            <main className="min-h-screen bg-white text-gray-900 dark:bg-black dark:text-white">
-              {children}
-            </main>
-            <Chat />
-            <Toaster richColors />
-          </ThemeProvider>
+          <Header />
+          <main className="min-h-screen bg-white text-gray-900">{children}</main>
+          <Chat />
+          <Toaster richColors />
         </body>
       </html>
     </ClerkProvider>
