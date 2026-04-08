@@ -1,14 +1,4 @@
-Mohammad Ehshan- https://github.com/Mohammad-Ehshan
-Aryan Jha- https://github.com/Diotoara
-N.Aarwin- https://github.com/Aarwin10
-
-
-StockInvestment:https://github.com/Mohammad-Ehshan/Stock-Invetment
-
-
-
-
-Research work Documentation done by us:
+Research work Documentation done :
 
 Gaps in the Finance Industry & What Major Players Lack(How are we different from our competitors)
 The finance industry in India is fragmented, with companies specializing in different aspects (credit cards, investments, loans, or budgeting). However, no single player provides a comprehensive, AI-driven financial ecosystem that automates personal finance end-to-end. Here are the major gaps:
