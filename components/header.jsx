@@ -1,4 +1,4 @@
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { Show, SignInButton, UserButton } from "@clerk/nextjs";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -23,10 +23,10 @@ const Header = async () => {
             className="h-14 w-auto object-contain"
           />
         </Link>
-        <ThemeToggle />
+        {/* <ThemeToggle /> */}
         <div className="flex items-center space-x-4">
           {/* when user sign in things they can acces  */}
-          <SignedIn>
+          <Show when="signed-in">
             <Link
               href={"/dashboard"}
               className="text-slate-500 hover:text-cyan-600 flex items-center gap-2"
@@ -42,14 +42,14 @@ const Header = async () => {
                 <span className="hidden md:inline">Add Transaction</span>
               </Button>
             </Link>
-          </SignedIn>
+          </Show>
 
-          <SignedOut>
+          <Show when="signed-out">
             <SignInButton forceRedirectUrl="/dashboard">
               <Button variant="outline">LogIn</Button>
             </SignInButton>
-          </SignedOut>
-          <SignedIn>
+          </Show>
+          <Show when="signed-in">
             <UserButton
               appearance={{
                 elements: {
@@ -57,7 +57,7 @@ const Header = async () => {
                 },
               }}
             />
-          </SignedIn>
+          </Show>
         </div>
       </nav>
     </div>

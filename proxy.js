@@ -9,7 +9,7 @@ const isProtectedRoute = createRouteMatcher([
   "/transaction(.*)",
 ]);
 
-//adding middleware to protexct from bot atck
+// adding proxy rules to protect from bot attacks
 
 const aj = arcjet({
   key: process.env.ARCJET_KEY,
@@ -34,7 +34,8 @@ const clerk = clerkMiddleware(async (auth, req) => {
   }
 });
 
-export default createMiddleware(aj, clerk);
+export const proxy = createMiddleware(aj, clerk);
+export default proxy;
 
 // 1.till here
 
